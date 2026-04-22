@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_HEIGHT, GAME_WIDTH } from "../game/config.js";
+import { GAME_WIDTH } from "../game/config.js";
 import { gameText } from "../data/gameText.js";
 import { addCenteredText, createPanel, formatChoiceKey } from "../utils/helpers.js";
 
@@ -9,21 +9,29 @@ export class QuizScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x07111f);
+    this.choiceLocked = false;
+
+    this.add.rectangle(GAME_WIDTH / 2, 360, GAME_WIDTH, 720, 0x07111f);
     createPanel(this, 120, 90, 1040, 530);
 
     addCenteredText(this, GAME_WIDTH / 2, 150, "最終安全判斷", {
       fontSize: "40px",
       color: "#ffd84d",
-      fontStyle: "700"
+      fontStyle: "700",
+      stroke: "#07111f",
+      strokeThickness: 6
     });
     addCenteredText(this, GAME_WIDTH / 2, 218, gameText.quizTitle, {
       fontSize: "30px",
-      wordWrap: { width: 900 }
+      wordWrap: { width: 900 },
+      stroke: "#07111f",
+      strokeThickness: 5
     });
     addCenteredText(this, GAME_WIDTH / 2, 278, gameText.quizPrompt, {
       fontSize: "22px",
-      color: "#9fbcce"
+      color: "#9fbcce",
+      stroke: "#07111f",
+      strokeThickness: 4
     });
 
     this.optionButtons = [];
@@ -37,7 +45,9 @@ export class QuizScene extends Phaser.Scene {
         fontSize: "24px",
         color: "#eff8ff",
         align: "center",
-        wordWrap: { width: 760 }
+        wordWrap: { width: 760 },
+        stroke: "#07111f",
+        strokeThickness: 4
       }).setOrigin(0.5);
 
       button.on("pointerover", () => button.setFillStyle(0x1d4367, 1));
@@ -48,6 +58,11 @@ export class QuizScene extends Phaser.Scene {
   }
 
   chooseOption(index) {
+    if (this.choiceLocked) {
+      return;
+    }
+
+    this.choiceLocked = true;
     const chosen = formatChoiceKey(index);
     const correct = chosen === gameText.quizCorrect;
     const runData = this.registry.get("runData");
@@ -63,7 +78,9 @@ export class QuizScene extends Phaser.Scene {
     addCenteredText(this, GAME_WIDTH / 2, 656, correct ? gameText.quizSuccess : gameText.quizFail, {
       fontSize: "24px",
       color: correct ? "#6dff8a" : "#ffd84d",
-      wordWrap: { width: 980 }
+      wordWrap: { width: 980 },
+      stroke: "#07111f",
+      strokeThickness: 4
     });
 
     this.time.delayedCall(1500, () => this.scene.start("ResultScene"));
