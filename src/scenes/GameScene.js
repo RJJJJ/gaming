@@ -5,15 +5,15 @@ import { Collectible, SafeMarker } from "../entities/items.js";
 import { enemyData } from "../data/enemyData.js";
 import { itemData } from "../data/itemData.js";
 import { gameText } from "../data/gameText.js";
-import { GAME_HEIGHT } from "../game/config.js";
+import { GAME_HEIGHT, GAME_WIDTH } from "../game/config.js";
 import { HUD } from "../ui/HUD.js";
 import { createPanel } from "../utils/helpers.js";
 
 const SAFE_MARKERS = [
-  { label: "再次查證", x: 1260, y: 600 },
-  { label: "保護私隱", x: 1940, y: 600 },
-  { label: "人工覆核", x: 2860, y: 600 },
-  { label: "來源確認", x: 3480, y: 600 }
+  { label: "再次查證", x: 1260, y: 566 },
+  { label: "保護私隱", x: 1940, y: 566 },
+  { label: "人工覆核", x: 2860, y: 566 },
+  { label: "來源確認", x: 3480, y: 566 }
 ];
 
 export class GameScene extends Phaser.Scene {
@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, 180, 540);
     this.player.body.setSize(46, 70);
+    this.player.setDepth(14);
 
     this.physics.add.collider(this.player, this.platforms);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
@@ -74,17 +75,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   createBackground() {
-    this.add.rectangle(this.worldWidth / 2, GAME_HEIGHT / 2, this.worldWidth, GAME_HEIGHT, 0x07111f);
+    this.add.rectangle(this.worldWidth / 2, GAME_HEIGHT / 2, this.worldWidth, GAME_HEIGHT, 0x07111f)
+      .setDepth(0);
 
     for (let i = 0; i < 26; i += 1) {
       const x = i * 170 + 60;
-      this.add.rectangle(x, 120, 6, 180, 0x103250, 0.5);
-      this.add.rectangle(x + 48, 180, 90, 16, 0x12385d, 0.45);
-      this.add.rectangle(x + 16, 280, 136, 4, 0x45d0ff, 0.26);
+      this.add.rectangle(x, 120, 6, 180, 0x103250, 0.5).setDepth(0);
+      this.add.rectangle(x + 48, 180, 90, 16, 0x12385d, 0.45).setDepth(0);
+      this.add.rectangle(x + 16, 280, 136, 4, 0x45d0ff, 0.26).setDepth(0);
     }
 
     this.add.rectangle(this.worldWidth / 2, 650, this.worldWidth, 140, 0x0d2035, 1)
-      .setStrokeStyle(3, 0x45d0ff, 0.32);
+      .setStrokeStyle(3, 0x45d0ff, 0.32)
+      .setDepth(1);
   }
 
   createPlatforms() {
@@ -106,35 +109,49 @@ export class GameScene extends Phaser.Scene {
         .setDisplaySize(width, height)
         .refreshBody()
         .setVisible(false);
-      this.add.rectangle(x, y, width, height, 0x183759, 1).setStrokeStyle(2, 0x45d0ff, 0.6);
+      this.add.rectangle(x, y, width, height, 0x183759, 1)
+        .setStrokeStyle(2, 0x45d0ff, 0.6)
+        .setDepth(3);
     });
   }
 
   createTutorialOverlay() {
-    this.tutorialContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(40);
-    this.tutorialContainer.add(createPanel(this, 120, 80, 420, 250));
-    this.tutorialContainer.add(this.add.text(150, 108, gameText.tutorialTitle, {
-      fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
-      fontSize: "28px",
-      color: "#ffd84d",
-      fontStyle: "700"
+    const cardWidth = 300;
+    const cardHeight = 146;
+    const x = GAME_WIDTH - cardWidth - 28;
+    const y = 20;
+
+    this.tutorialContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(60);
+    this.tutorialContainer.add(createPanel(this, x, y, cardWidth, cardHeight, {
+      fillAlpha: 0.9,
+      strokeAlpha: 1
     }));
-    this.tutorialContainer.add(this.add.text(150, 156, [
-      ...gameText.tutorialBullets.map((line) => `• ${line}`),
-      "",
-      ...gameText.controls
+    this.tutorialContainer.add(this.add.text(x + 22, y + 18, "任務提示", {
+      fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
+      fontSize: "22px",
+      color: "#ffd84d",
+      fontStyle: "700",
+      stroke: "#07111f",
+      strokeThickness: 4
+    }));
+    this.tutorialContainer.add(this.add.text(x + 22, y + 52, [
+      "• 清除 AI 風險",
+      "• 收集安全工具",
+      "• 不要打中正確做法"
     ].join("\n"), {
       fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
-      fontSize: "20px",
+      fontSize: "19px",
       color: "#eff8ff",
-      lineSpacing: 8
+      lineSpacing: 8,
+      stroke: "#07111f",
+      strokeThickness: 4
     }));
 
-    this.time.delayedCall(4500, () => {
+    this.time.delayedCall(2800, () => {
       this.tweens.add({
         targets: this.tutorialContainer,
         alpha: 0,
-        duration: 420,
+        duration: 320,
         onComplete: () => this.tutorialContainer.destroy()
       });
     });
@@ -171,23 +188,36 @@ export class GameScene extends Phaser.Scene {
 
   spawnItem(type, x, y) {
     const item = new Collectible(this, x, y, itemData[type]);
+    item.setDepth(9);
     this.items.add(item);
+
     item.labelRef = this.add.text(x, y + 42, item.config.label, {
       fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
       fontSize: "18px",
-      color: "#eff8ff"
-    }).setOrigin(0.5);
+      color: "#eff8ff",
+      stroke: "#07111f",
+      strokeThickness: 4
+    }).setOrigin(0.5).setDepth(12);
   }
 
   spawnSafeMarker(label, x, y) {
     const marker = new SafeMarker(this, x, y, label);
+    marker.setDepth(7);
+    marker.setDisplaySize(138, 64);
+    marker.setTint(0x0a3e39);
     this.safeMarkers.add(marker);
+
+    marker.backingRef = this.add.rectangle(x, y, 144, 68, 0x0a3e39, 0.95)
+      .setStrokeStyle(2, 0x6ef0d2, 0.95)
+      .setDepth(10);
     marker.labelRef = this.add.text(x, y, label, {
       fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
       fontSize: "18px",
-      color: "#023427",
-      fontStyle: "700"
-    }).setOrigin(0.5);
+      color: "#eff8ff",
+      fontStyle: "700",
+      stroke: "#062a24",
+      strokeThickness: 4
+    }).setOrigin(0.5).setDepth(11);
   }
 
   tryShoot() {
@@ -239,7 +269,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.statusMessage = result === "shield"
-      ? "私隱保護吸收了傷害"
+      ? "私隱護盾擋下了傷害"
       : `遭受 ${enemy.config.label} 攻擊`;
     if (result !== "shield") {
       this.cameras.main.shake(120, 0.005);
@@ -268,8 +298,8 @@ export class GameScene extends Phaser.Scene {
     this.player.addScore(-20);
     this.statusMessage = `${gameText.safeHitWarning}：${marker.safeLabel}`;
     this.showFloatingText(marker.x, marker.y - 62, gameText.safeHitWarning, "#52f5c8");
-    marker.setTint(0xf7ff8d);
-    this.time.delayedCall(220, () => marker.setTint(0x52f5c8));
+    marker.backingRef?.setFillStyle(0x306b44, 0.95);
+    this.time.delayedCall(220, () => marker.backingRef?.setFillStyle(0x0a3e39, 0.95));
   }
 
   showFloatingText(x, y, text, color = "#ffd84d") {
@@ -279,7 +309,7 @@ export class GameScene extends Phaser.Scene {
       color,
       stroke: "#07111f",
       strokeThickness: 4
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(20);
 
     this.tweens.add({
       targets: label,
@@ -308,6 +338,9 @@ export class GameScene extends Phaser.Scene {
       }
     });
     this.safeMarkers.getChildren().forEach((marker) => {
+      if (marker.backingRef?.active) {
+        marker.backingRef.setPosition(marker.x, marker.y);
+      }
       if (marker.labelRef?.active) {
         marker.labelRef.setPosition(marker.x, marker.y);
       }

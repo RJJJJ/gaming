@@ -25,7 +25,7 @@ export const gameText = {
   ],
   quizCorrect: "C",
   quizSuccess: "答對了。安全使用 AI，重點是保護私隱並保留查證。",
-  quizFail: "這題答錯也能過關，但重要結果仍要查證，敏感資料不能亂輸入。",
+  quizFail: "這題答錯也能完成，但敏感資料不能亂輸入，重要結果仍要查證。",
   resultTitle: "任務結算",
   resultLessons: [
     "AI 可能出錯",

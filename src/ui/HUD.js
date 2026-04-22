@@ -1,19 +1,19 @@
 export class HUD {
   constructor(scene) {
     this.scene = scene;
-    this.container = scene.add.container(24, 18).setScrollFactor(0).setDepth(30);
+    this.container = scene.add.container(24, 18).setScrollFactor(0).setDepth(50);
 
-    const bg = scene.add.rectangle(0, 0, 420, 120, 0x08121f, 0.76).setOrigin(0);
-    bg.setStrokeStyle(2, 0x45d0ff, 0.9);
+    const bg = scene.add.rectangle(0, 0, 440, 120, 0x08121f, 0.82).setOrigin(0);
+    bg.setStrokeStyle(2, 0x45d0ff, 0.95);
 
     this.healthText = scene.add.text(18, 16, "", this.textStyle());
     this.scoreText = scene.add.text(18, 46, "", this.textStyle());
     this.toolText = scene.add.text(18, 76, "", this.textStyle());
-    this.statusText = scene.add.text(238, 16, "", {
+    this.statusText = scene.add.text(248, 16, "", {
       ...this.textStyle(),
       fontSize: "18px",
       color: "#ffd84d",
-      wordWrap: { width: 162 }
+      wordWrap: { width: 170 }
     });
 
     this.container.add([bg, this.healthText, this.scoreText, this.toolText, this.statusText]);
@@ -23,7 +23,10 @@ export class HUD {
     return {
       fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
       fontSize: "22px",
-      color: "#eff8ff"
+      color: "#eff8ff",
+      stroke: "#07111f",
+      strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 2, color: "#000000", blur: 4, fill: true }
     };
   }
 

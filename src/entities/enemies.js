@@ -20,6 +20,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setTint(config.color);
     this.setCollideWorldBounds(false);
     this.setImmovable(false);
+    this.setDepth(8);
     this.body.allowGravity = config.behavior !== "float";
   }
 
@@ -50,8 +51,11 @@ export function createEnemyLabel(scene, enemy) {
     fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
     fontSize: "16px",
     color: enemy.config.textColor,
-    fontStyle: "700"
-  }).setOrigin(0.5);
+    fontStyle: "700",
+    stroke: "#07111f",
+    strokeThickness: 4,
+    shadow: { offsetX: 0, offsetY: 2, color: "#000000", blur: 4, fill: true }
+  }).setOrigin(0.5).setDepth(12);
 
   label.enemyRef = enemy;
   return label;
