@@ -43,6 +43,12 @@ npm run dev
 npm run build
 ```
 
+## GitHub Pages 發布
+
+- 此專案已配置 GitHub Pages workflow。
+- 推送到 `main` 後，GitHub Actions 會自動 build 並部署。
+- 預期展示網址為：`https://rjjjj.github.io/gaming/`
+
 ## 專案結構簡介
 
 ```text
