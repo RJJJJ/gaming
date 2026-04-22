@@ -18,8 +18,9 @@ export class BossScene extends Phaser.Scene {
   create() {
     this.bossDefeated = false;
     this.statusMessage = gameText.bossIntro;
-    this.bossBarMaxWidth = 492;
     this.lastBossHitAt = 0;
+    this.bossMaxHp = 12;
+    this.bossHp = this.bossMaxHp;
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x08111f);
@@ -70,13 +71,16 @@ export class BossScene extends Phaser.Scene {
     this.boss = this.physics.add.sprite(980, 430, "boss");
     this.boss.body.allowGravity = false;
     this.boss.setDepth(8);
-    this.boss.setSize(220, 170, true);
-    this.boss.hp = 12;
-    this.boss.maxHp = 12;
     this.boss.direction = -1;
     this.boss.baseY = 430;
 
-    this.physics.add.overlap(this.bullets, this.boss, this.handleBossHit, null, this);
+    this.bossHitbox = this.add.zone(this.boss.x, this.boss.y, 220, 170);
+    this.physics.add.existing(this.bossHitbox);
+    this.bossHitbox.body.allowGravity = false;
+    this.bossHitbox.body.moves = false;
+    this.bossHitbox.setDepth(7);
+
+    this.physics.add.overlap(this.bullets, this.bossHitbox, this.handleBossHit, null, this);
     this.physics.add.overlap(this.player, this.enemyShots, this.handlePlayerShot, null, this);
 
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -95,7 +99,7 @@ export class BossScene extends Phaser.Scene {
 
     this.hud = new HUD(this);
     this.createBossBar();
-    this.updateBossBar();
+    this.renderBossBar();
 
     this.attackTimer = this.time.addEvent({
       delay: 1600,
@@ -109,9 +113,8 @@ export class BossScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x45d0ff, 1)
       .setDepth(30);
-    this.bossBar = this.add.rectangle(728, 46, this.bossBarMaxWidth, 26, 0xff6b6b, 1)
-      .setOrigin(0, 0)
-      .setDepth(31);
+
+    this.bossBarFill = this.add.graphics().setDepth(31);
     this.bossTitle = this.add.text(724, 14, `${gameText.bossName} 血量`, {
       fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
       fontSize: "22px",
@@ -120,6 +123,13 @@ export class BossScene extends Phaser.Scene {
       strokeThickness: 4,
       shadow: { offsetX: 0, offsetY: 2, color: "#000000", blur: 4, fill: true }
     }).setDepth(31);
+  }
+
+  renderBossBar() {
+    const ratio = Phaser.Math.Clamp(this.bossHp / this.bossMaxHp, 0, 1);
+    this.bossBarFill.clear();
+    this.bossBarFill.fillStyle(0xff6b6b, 1);
+    this.bossBarFill.fillRect(728, 46, 492 * ratio, 26);
   }
 
   tryShoot() {
@@ -135,6 +145,7 @@ export class BossScene extends Phaser.Scene {
     bullet.setDepth(12);
     bullet.setVelocityX(this.player.getShotVelocity());
     bullet.setTint(0xfff17a);
+    bullet.hasHitBoss = false;
     this.player.recordShot(this.time.now);
   }
 
@@ -157,28 +168,29 @@ export class BossScene extends Phaser.Scene {
     }
   }
 
-  handleBossHit(bullet, boss) {
-    if (!bullet.active || this.bossDefeated || !boss.active) {
+  handleBossHit(bullet) {
+    if (!bullet.active || bullet.hasHitBoss || this.bossDefeated || !this.boss.active) {
       return;
     }
 
     const now = this.time.now;
-    if (now - this.lastBossHitAt < 80) {
+    if (now - this.lastBossHitAt < 100) {
       bullet.disableBody(true, true);
       return;
     }
 
     this.lastBossHitAt = now;
+    bullet.hasHitBoss = true;
     bullet.disableBody(true, true);
 
-    boss.hp = Math.max(0, boss.hp - 1);
+    this.bossHp = Math.max(0, this.bossHp - 1);
     this.player.addScore(12);
     this.player.risksCleared += 1;
-    this.statusMessage = `命中核心弱點 (${boss.hp}/${boss.maxHp})`;
-    this.updateBossBar();
+    this.statusMessage = `命中核心弱點 (${this.bossHp}/${this.bossMaxHp})`;
+    this.renderBossBar();
     this.showBossHitFeedback();
 
-    if (boss.hp <= 0) {
+    if (this.bossHp === 0) {
       this.player.addScore(60);
       this.completeBossFight();
     }
@@ -231,11 +243,6 @@ export class BossScene extends Phaser.Scene {
     }
   }
 
-  updateBossBar() {
-    const ratio = Phaser.Math.Clamp(this.boss.hp / this.boss.maxHp, 0, 1);
-    this.bossBar.displayWidth = this.bossBarMaxWidth * ratio;
-  }
-
   completeBossFight() {
     if (this.bossDefeated) {
       return;
@@ -245,7 +252,7 @@ export class BossScene extends Phaser.Scene {
     this.attackTimer?.remove(false);
     this.enemyShots.clear(true, true);
     this.statusMessage = "核心已淨化，準備最終判斷";
-    this.updateBossBar();
+    this.renderBossBar();
 
     const runData = this.registry.get("runData");
     Object.assign(runData, {
@@ -257,6 +264,7 @@ export class BossScene extends Phaser.Scene {
     });
     this.registry.set("runData", runData);
 
+    this.bossHitbox.destroy();
     this.tweens.add({
       targets: this.boss,
       alpha: 0,
@@ -282,6 +290,7 @@ export class BossScene extends Phaser.Scene {
       if (this.boss.x < 900 || this.boss.x > 1080) {
         this.boss.direction *= -1;
       }
+      this.bossHitbox.setPosition(this.boss.x, this.boss.y);
     }
 
     this.bullets.getChildren().forEach((bullet) => {
