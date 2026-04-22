@@ -18,6 +18,8 @@ export class BossScene extends Phaser.Scene {
   create() {
     this.bossDefeated = false;
     this.statusMessage = gameText.bossIntro;
+    this.bossBarMaxWidth = 492;
+    this.lastBossHitAt = 0;
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x08111f);
@@ -93,6 +95,7 @@ export class BossScene extends Phaser.Scene {
 
     this.hud = new HUD(this);
     this.createBossBar();
+    this.updateBossBar();
 
     this.attackTimer = this.time.addEvent({
       delay: 1600,
@@ -106,7 +109,7 @@ export class BossScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x45d0ff, 1)
       .setDepth(30);
-    this.bossBar = this.add.rectangle(728, 46, 492, 26, 0xff6b6b, 1)
+    this.bossBar = this.add.rectangle(728, 46, this.bossBarMaxWidth, 26, 0xff6b6b, 1)
       .setOrigin(0, 0)
       .setDepth(31);
     this.bossTitle = this.add.text(724, 14, `${gameText.bossName} 血量`, {
@@ -155,15 +158,23 @@ export class BossScene extends Phaser.Scene {
   }
 
   handleBossHit(bullet, boss) {
-    bullet.destroy();
-    if (this.bossDefeated || !boss.active) {
+    if (!bullet.active || this.bossDefeated || !boss.active) {
       return;
     }
 
-    boss.hp -= 1;
+    const now = this.time.now;
+    if (now - this.lastBossHitAt < 80) {
+      bullet.disableBody(true, true);
+      return;
+    }
+
+    this.lastBossHitAt = now;
+    bullet.disableBody(true, true);
+
+    boss.hp = Math.max(0, boss.hp - 1);
     this.player.addScore(12);
     this.player.risksCleared += 1;
-    this.statusMessage = "命中核心弱點";
+    this.statusMessage = `命中核心弱點 (${boss.hp}/${boss.maxHp})`;
     this.updateBossBar();
     this.showBossHitFeedback();
 
@@ -206,7 +217,7 @@ export class BossScene extends Phaser.Scene {
   }
 
   handlePlayerShot(player, shot) {
-    shot.destroy();
+    shot.disableBody(true, true);
     const result = player.takeDamage(shot.damage ?? 1, this.time.now);
     if (!result) {
       return;
@@ -221,7 +232,8 @@ export class BossScene extends Phaser.Scene {
   }
 
   updateBossBar() {
-    this.bossBar.width = 492 * Phaser.Math.Clamp(this.boss.hp / this.boss.maxHp, 0, 1);
+    const ratio = Phaser.Math.Clamp(this.boss.hp / this.boss.maxHp, 0, 1);
+    this.bossBar.displayWidth = this.bossBarMaxWidth * ratio;
   }
 
   completeBossFight() {
@@ -233,6 +245,7 @@ export class BossScene extends Phaser.Scene {
     this.attackTimer?.remove(false);
     this.enemyShots.clear(true, true);
     this.statusMessage = "核心已淨化，準備最終判斷";
+    this.updateBossBar();
 
     const runData = this.registry.get("runData");
     Object.assign(runData, {
@@ -272,14 +285,14 @@ export class BossScene extends Phaser.Scene {
     }
 
     this.bullets.getChildren().forEach((bullet) => {
-      if (bullet.x > GAME_WIDTH + 60 || bullet.x < -60) {
-        bullet.destroy();
+      if (bullet.active && (bullet.x > GAME_WIDTH + 60 || bullet.x < -60)) {
+        bullet.disableBody(true, true);
       }
     });
 
     this.enemyShots.getChildren().forEach((shot) => {
-      if (shot.x > GAME_WIDTH + 60 || shot.x < -60 || shot.y > GAME_HEIGHT + 60) {
-        shot.destroy();
+      if (shot.active && (shot.x > GAME_WIDTH + 60 || shot.x < -60 || shot.y > GAME_HEIGHT + 60)) {
+        shot.disableBody(true, true);
       }
     });
 
